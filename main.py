@@ -6,6 +6,7 @@ from fastapi import FastAPI ,Request
 import os
 import requests 
 import json
+from views.views_all import add_project_view
 
 import logging
 from db.init_db import init_db
@@ -30,6 +31,7 @@ sign_secret=os.environ['SLACK_SIGNING_SECRET']
 # app_token=os.environ['SLACK_APP_TOKEN']
 FASTAPI_URL=os.environ['FASTAPI_URL']
 FASTAPI_URL2=os.environ['FASTAPI_URL2']
+FASTAPI_URL3=os.environ['FASTAPI_URL3']
 
 
 
@@ -78,43 +80,44 @@ def open_project_form(ack, body, client,logger):
 
     client.views_open(
         trigger_id=trigger_id,
-        view={
-            "type": "modal",
-            "callback_id": "project_form",
-            "title": {"type": "plain_text", "text": "Add Project"},
-            "submit": {"type": "plain_text", "text": "Save"},
-            "close": {"type": "plain_text", "text": "Cancel"},
-            "blocks": [
-                {
-                    "type": "input",
-                    "block_id": "title_block",
-                    "label": {"type": "plain_text", "text": "Project Title"},
-                    "element": {
-                        "type": "plain_text_input",
-                        "action_id": "title"
-                    }
-                },
-                {
-                    "type": "input",
-                    "block_id": "desc_block",
-                    "label": {"type": "plain_text", "text": "Description"},
-                    "element": {
-                        "type": "plain_text_input",
-                        "multiline": True,
-                        "action_id": "description"
-                    }
-                },
-                {
-                    "type": "input",
-                    "block_id": "tech_block",
-                    "label": {"type": "plain_text", "text": "Tech Stack"},
-                    "element": {
-                        "type": "plain_text_input",
-                        "action_id": "tech"
-                    }
-                }
-            ]
-        }
+        view=add_project_view
+        # view={
+        #     "type": "modal",
+        #     "callback_id": "project_form",
+        #     "title": {"type": "plain_text", "text": "Add Project"},
+        #     "submit": {"type": "plain_text", "text": "Save"},
+        #     "close": {"type": "plain_text", "text": "Cancel"},
+        #     "blocks": [
+        #         {
+        #             "type": "input",
+        #             "block_id": "title_block",
+        #             "label": {"type": "plain_text", "text": "Project Title"},
+        #             "element": {
+        #                 "type": "plain_text_input",
+        #                 "action_id": "title"
+        #             }
+        #         },
+        #         {
+        #             "type": "input",
+        #             "block_id": "desc_block",
+        #             "label": {"type": "plain_text", "text": "Description"},
+        #             "element": {
+        #                 "type": "plain_text_input",
+        #                 "multiline": True,
+        #                 "action_id": "description"
+        #             }
+        #         },
+        #         {
+        #             "type": "input",
+        #             "block_id": "tech_block",
+        #             "label": {"type": "plain_text", "text": "Tech Stack"},
+        #             "element": {
+        #                 "type": "plain_text_input",
+        #                 "action_id": "tech"
+        #             }
+        #         }
+        #     ]
+        # }
     )
 
     logger.info("Checkpoint 1: Modal displayed")
@@ -162,6 +165,7 @@ def open_job_form(ack, body, client,logger):
     trigger_id = body["trigger_id"]
     client.views_open(
         trigger_id=trigger_id,
+        # Can not put this view in separate file because of its dependency on body variable
         view={
             "type": "modal",
             "callback_id": "job_form",
@@ -216,6 +220,56 @@ def handle_job_submission(ack, body, view,logger,client):
     print(response.json())
     client.chat_postMessage(channel=view['private_metadata'],text=json.dumps(response.json(), indent=2))
     
+############################################################
+#############################################################
+###############################################################
+##############################################################
+
+@slack_app.command("/add-job")
+def save_job_form(ack, body, client,logger):
+    ack()
+    trigger_id = body["trigger_id"]
+    client.views_open(
+        trigger_id=trigger_id,
+        # Can not put this view in separate file because of its dependency on body variable
+        view={
+            "type": "modal",
+            "callback_id": "add_job_form",
+            "title": {"type": "plain_text", "text": "Add Job Description"},
+            "submit": {"type": "plain_text", "text": "Save"},
+            "close": {"type": "plain_text", "text": "Cancel"},
+            "blocks": [
+                {
+                    "type": "input",
+                    "block_id": "job_block",
+                    "label": {"type": "plain_text", "text": " Job Description"},
+                    "element": {
+                        "type": "plain_text_input",
+                        "action_id": "job_description",
+                        "multiline": True,
+                    }
+                },
+            ]
+        }
+    )
+
+    logger.info("Checkpoint 2: Modal 2 displayed")
+
+
+@slack_app.view("add_job_form")
+def save_job(ack, body, view,logger,client):
+    ack()
+    values = view["state"]["values"]
+    job = values["job_block"]["job_description"]["value"]
+    payload = {
+        "job_description": job,
+        "created_by": body["user"]["id"]
+    }
+    # here json=payload automatically calls json.dumps(payload)
+    response = requests.post(FASTAPI_URL3, json=payload)
+    logger.info(f"Response: {response.json()}")
+
+
 
 # Slack handler
 handler = SlackRequestHandler(slack_app)
@@ -231,7 +285,5 @@ async def slack_events(req: Request):
 # if __name__ == '__main__':
 #     handler = SocketModeHandler(app=app,app_token=app_token)
 #     handler.start()
-
-
 
 # using ngrok and also flask you will make things 

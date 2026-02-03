@@ -7,4 +7,3 @@ class JobCreate(BaseModel):
     @classmethod
     def trim_and_lowercase(cls,value:str):
         return value.strip().lower()
-    

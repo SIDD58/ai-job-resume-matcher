@@ -3,6 +3,7 @@ from mappers.orm_project_to_dto import orm_project_to_dto
 from schemas.project import ProjectCreate,ProjectGet
 from schemas.job import JobCreate
 from db.operations.crud import store_project,delete_projects
+from db.operations.crud_job import store_job
 from db.operations.similarity import similar_project
 from db.session import get_db
 from typing import List, Dict, Union
@@ -36,6 +37,18 @@ def find_project(data:JobCreate, session=Depends(get_db),response_model=List[Pro
     # }
     #ORM models ≠ API response models
     return orm_project_list
+
+@router.post('/add-job')
+def post_jon(data:JobCreate,session=Depends(get_db)):
+    print("How does the Posted Data Looks like: ")
+    print(data)
+    result = store_job(session, data)
+    print("Result of Storing Job: ", result)
+    return {
+        'job':data
+    }
+
+
 
 @router.get('/projects')
 def get_projects():
