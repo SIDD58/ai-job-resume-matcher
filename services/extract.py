@@ -4,6 +4,7 @@ from langchain_core.prompts import PromptTemplate
 from dotenv import load_dotenv
 import os
 from schemas.job_extract import JobDescriptionExtracted
+from services.redis_trace_name import get_trace_name
 
 load_dotenv()
 os.environ["OPENAI_API_KEY"] = os.environ['OPENAI_API_KEY']
@@ -24,7 +25,8 @@ def extract_job_description(job_description:str)->JobDescriptionExtracted:
     )
     prompt=template.invoke({"job_description":job_description})
     print("Prompt: \n", prompt.to_string(),"\n")
-    response=model.invoke(prompt)
+    response=model.invoke(prompt,config={"run_name": get_trace_name()})
     final_result=parser.parse(response.content)
     print("Extracted Job Description: \n", final_result.dict(),"\n")
-    return final_result
+    return 
+

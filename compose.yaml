@@ -1,0 +1,30 @@
+services:
+  # Case 1: Persistent Storage (Append-Only Mode)
+  redis-db:
+    image: redis:8.2.4-alpine
+    container_name: redis-persistent-aof
+    command: redis-server --appendonly yes
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_store_data:/data
+    restart: always
+
+  # Case 2: Pure Cache (Volatile / No Persistence)
+  redis-cache:
+    image: redis:8.2.4-alpine
+    container_name: redis-caching
+    # 'appendonly no' is default, --save "" means no persistence
+    #command: redis-server --appendonly no --save ""
+    # however we will be using rdb as we also want rate lmiting scenario to work
+    volumes:
+      - redis_cache_data:/data 
+    command: redis-server
+    ports:
+      - "6380:6379"  # Port 6380 on your machine -> 6379 in container
+    restart: always
+
+volumes:
+  redis_store_data:
+  redis_cache_data: 
+    driver: local

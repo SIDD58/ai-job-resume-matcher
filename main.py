@@ -24,7 +24,7 @@ logging.basicConfig(
     format="%(asctime)s | %(levelname)s | %(name)s | %(message)s"
 )
 
-from routers import deprecated_welcome_route, resume_route
+from routers import deprecated_welcome_route, resume_routes
 load_dotenv()
 bot_token=os.environ['SLACK_BOT_TOKEN']
 sign_secret=os.environ['SLACK_SIGNING_SECRET']
@@ -39,8 +39,10 @@ slack_app=App(token=bot_token,signing_secret=sign_secret)
 #app.client.chat_postMessage(channel="C0A92BHGUDV",text="Hello")
 server=FastAPI(title="Project Matcher App")
 
+server.include_router(router=resume_routes.router,prefix='/resume')
 server.include_router(router=deprecated_welcome_route.router)
-server.include_router(router=resume_route.router,prefix='/resume')
+
+
 
 @slack_app.event("message")
 def log_event(event,say,client):
@@ -137,7 +139,6 @@ def handle_project_submission(ack, body, view,logger):
     print("VIEW")
     print(view)
     values = view["state"]["values"]
-
 
     title = values["title_block"]["title"]["value"]
     description = values["desc_block"]["description"]["value"]
